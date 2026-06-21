@@ -1,98 +1,2194 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>供应链智能看板系统</title>
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>供应链食盐智能看板系统 v1.0</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="icon" type="image/png" sizes="1024x1024" href="app-icon.png" />
+<link rel="apple-touch-icon" href="app-icon.png" />
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0f1923" />
+<meta name="description" content="供应链食盐智能看板系统 - 库存进销存、客户台账、配送线路、销售考核一体化看板" />
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg-primary: #0f1923;
+  --bg-secondary: #1a2332;
+  --bg-card: #1e2d3d;
+  --bg-hover: #243447;
+  --text-primary: #e0e6ed;
+  --text-secondary: #8899aa;
+  --accent-blue: #00a8ff;
+  --accent-cyan: #00d4ff;
+  --accent-green: #00e676;
+  --accent-orange: #ff9800;
+  --accent-red: #ff5252;
+  --accent-purple: #ab47bc;
+  --border-color: #2a3a4a;
+  --shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  font-size: 14px;
+  overflow-x: hidden;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #0a1520 0%, #1a2a3a 100%);
+  border-bottom: 1px solid var(--border-color);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: var(--shadow);
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.header-logo {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #00a8ff, #00d4ff);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: bold;
+  color: #0a1520;
+}
+.header-title { font-size: 20px; font-weight: bold; color: #fff; }
+.header-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.header-time { font-size: 13px; color: var(--text-secondary); font-family: 'Courier New', monospace; }
+
+/* Buttons */
+.btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary { background: var(--accent-blue); color: #fff; }
+.btn-primary:hover { background: #0090e0; }
+.btn-success { background: var(--accent-green); color: #0a1520; }
+.btn-success:hover { background: #00c853; }
+.btn-warning { background: var(--accent-orange); color: #0a1520; }
+.btn-warning:hover { background: #f57c00; }
+.btn-danger { background: var(--accent-red); color: #fff; }
+.btn-danger:hover { background: #d32f2f; }
+.btn-secondary { background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border-color); }
+.btn-secondary:hover { background: #2a3a4a; }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0;
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border-color);
+  padding: 0 24px;
+  overflow-x: auto;
+}
+.tab {
+  padding: 12px 24px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+}
+.tab:hover { color: var(--text-primary); background: var(--bg-hover); }
+.tab.active { color: var(--accent-cyan); border-bottom-color: var(--accent-cyan); }
+
+/* Content */
+.content { padding: 20px 24px; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* KPI Cards */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.kpi-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+.kpi-card:hover { transform: translateY(-2px); }
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent-blue);
+}
+.kpi-card.green::before { background: var(--accent-green); }
+.kpi-card.orange::before { background: var(--accent-orange); }
+.kpi-card.red::before { background: var(--accent-red); }
+.kpi-card.purple::before { background: var(--accent-purple); }
+.kpi-card.cyan::before { background: var(--accent-cyan); }
+.kpi-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+.kpi-value { font-size: 28px; font-weight: bold; color: #fff; }
+.kpi-unit { font-size: 14px; color: var(--text-secondary); margin-left: 4px; }
+.kpi-sub { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+.kpi-trend { font-size: 12px; margin-top: 4px; }
+.kpi-trend.up { color: var(--accent-green); }
+.kpi-trend.down { color: var(--accent-red); }
+
+/* Charts */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.chart-grid-full {
+  grid-template-columns: 1fr;
+}
+.chart-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+}
+.chart-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chart-title::before {
+  content: '';
+  width: 4px; height: 16px;
+  background: var(--accent-cyan);
+  border-radius: 2px;
+}
+.chart-body { width: 100%; height: 360px; }
+
+/* Table */
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 12px;
+  flex: 1;
+  max-width: 400px;
+}
+.search-box input {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  outline: none;
+  width: 100%;
+  font-size: 13px;
+  font-family: inherit;
+}
+.select-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.select-group select {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.data-table-wrap {
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.data-table thead {
+  background: var(--bg-secondary);
+}
+.data-table th {
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+.data-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.data-table tbody tr:hover { background: var(--bg-hover); }
+.data-table .editable {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.data-table .editable:hover {
+  background: rgba(0,168,255,0.15);
+  outline: 1px dashed var(--accent-blue);
+}
+.edit-input {
+  background: var(--bg-primary);
+  border: 1px solid var(--accent-blue);
+  color: var(--text-primary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  width: 100%;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-green { background: rgba(0,230,118,0.15); color: var(--accent-green); }
+.badge-orange { background: rgba(255,152,0,0.15); color: var(--accent-orange); }
+.badge-red { background: rgba(255,82,82,0.15); color: var(--accent-red); }
+.badge-blue { background: rgba(0,168,255,0.15); color: var(--accent-blue); }
+.badge-gray { background: rgba(136,153,170,0.15); color: var(--text-secondary); }
+
+.table-footer {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.pagination { display: flex; gap: 4px; }
+.page-btn {
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+.page-btn:hover { background: var(--accent-blue); color: #fff; }
+.page-btn.active { background: var(--accent-blue); color: #fff; }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Analysis Report */
+.analysis-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 16px;
+}
+.analysis-section { margin-bottom: 20px; }
+.analysis-section:last-child { margin-bottom: 0; }
+.analysis-section-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.analysis-text {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text-primary);
+}
+.analysis-highlight { color: var(--accent-cyan); font-weight: bold; }
+.analysis-warn { color: var(--accent-orange); font-weight: bold; }
+.analysis-danger { color: var(--accent-red); font-weight: bold; }
+.analysis-good { color: var(--accent-green); font-weight: bold; }
+
+.risk-list { list-style: none; }
+.risk-item {
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border-left: 3px solid var(--accent-orange);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.risk-item.high { border-left-color: var(--accent-red); }
+.risk-item.medium { border-left-color: var(--accent-orange); }
+.risk-item.low { border-left-color: var(--accent-green); }
+
+/* Upload Area */
+.upload-area {
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 20px;
+}
+.upload-area:hover {
+  border-color: var(--accent-blue);
+  background: var(--bg-hover);
+}
+.upload-area.dragover {
+  border-color: var(--accent-cyan);
+  background: rgba(0,212,255,0.05);
+}
+.upload-icon { font-size: 48px; margin-bottom: 12px; }
+.upload-text { font-size: 16px; color: var(--text-primary); margin-bottom: 8px; }
+.upload-hint { font-size: 12px; color: var(--text-secondary); }
+
+/* Modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 24px;
+  width: 600px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+}
+.modal-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 20px;
+}
+.modal-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.modal-form .full { grid-column: 1 / -1; }
+.form-group { margin-bottom: 12px; }
+.form-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; display: block; }
+.form-input {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  width: 100%;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+.form-input:focus { border-color: var(--accent-blue); }
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* Toast */
+.toast-container {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 13px;
+  color: var(--text-primary);
+  box-shadow: var(--shadow);
+  animation: slideIn 0.3s ease;
+  border-left: 4px solid var(--accent-blue);
+}
+.toast.success { border-left-color: var(--accent-green); }
+.toast.warning { border-left-color: var(--accent-orange); }
+.toast.error { border-left-color: var(--accent-red); }
+@keyframes slideIn {
+  from { transform: translateX(400px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Supply chain cards */
+.chain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.chain-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+}
+.chain-card:hover { border-color: var(--accent-blue); }
+.chain-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.chain-name { font-size: 16px; font-weight: bold; color: #fff; }
+.chain-region { font-size: 12px; color: var(--text-secondary); }
+.chain-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.chain-stat {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 12px;
+}
+.chain-stat-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+.chain-stat-value { font-size: 18px; font-weight: bold; color: #fff; }
+.chain-stat-sub { font-size: 11px; color: var(--text-secondary); }
+.chain-bar {
+  height: 6px;
+  background: var(--bg-primary);
+  border-radius: 3px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.chain-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s;
+}
+.chain-status {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  text-align: center;
+}
+.chain-status.good { background: rgba(0,230,118,0.1); color: var(--accent-green); }
+.chain-status.warn { background: rgba(255,152,0,0.1); color: var(--accent-orange); }
+.chain-status.bad { background: rgba(255,82,82,0.1); color: var(--accent-red); }
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .chart-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .modal-form { grid-template-columns: 1fr; }
+  .header-title { font-size: 16px; }
+  .content { padding: 12px; }
+}
+
+.scrollable-table {
+  max-height: 600px;
+  overflow-y: auto;
+}
+.scrollable-table::-webkit-scrollbar { width: 6px; }
+.scrollable-table::-webkit-scrollbar-track { background: var(--bg-secondary); }
+.scrollable-table::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+
+/* Loading spinner */
+.spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.hidden { display: none !important; }
+</style>
 </head>
 <body>
-  <div class="app">
-    <header class="header">
-      <h1>供应链智能看板系统</h1>
-      <div class="header-actions">
-        <label class="upload-btn">
-          <input type="file" id="fileInput" accept=".xls,.xlsx" hidden>
-          上传Excel数据
-        </label>
-        <button class="btn" id="exportBtn">导出数据</button>
-        <button class="btn btn-primary" id="saveBtn">保存修改</button>
-      </div>
-    </header>
 
-    <div class="stats-bar">
-      <div class="stat-card healthy">
-        <div class="stat-value" id="healthyCount">0</div>
-        <div class="stat-label">健康状态</div>
-      </div>
-      <div class="stat-card normal">
-        <div class="stat-value" id="normalCount">0</div>
-        <div class="stat-label">正常状态</div>
-      </div>
-      <div class="stat-card warning">
-        <div class="stat-value" id="warningCount">0</div>
-        <div class="stat-label">预警状态</div>
-      </div>
-      <div class="stat-card critical">
-        <div class="stat-value" id="criticalCount">0</div>
-        <div class="stat-label">紧急状态</div>
-      </div>
-      <div class="stat-card total">
-        <div class="stat-value" id="totalCount">0</div>
-        <div class="stat-label">总记录数</div>
-      </div>
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">盐</div>
+    <div>
+      <div class="header-title">供应链食盐智能看板系统</div>
+      <div class="header-subtitle">Supply Chain Salt Intelligence Dashboard v1.0</div>
     </div>
-
-    <div class="charts-row">
-      <div class="chart-box">
-        <h3>供应链销量分布</h3>
-        <div id="salesChart" style="width:100%;height:300px;"></div>
-      </div>
-      <div class="chart-box">
-        <h3>需求与销量对比</h3>
-        <div id="demandChart" style="width:100%;height:300px;"></div>
-      </div>
-      <div class="chart-box">
-        <h3>状态占比分析</h3>
-        <div id="statusChart" style="width:100%;height:300px;"></div>
-      </div>
-    </div>
-
-    <div class="charts-row">
-      <div class="chart-box wide">
-        <h3>配送周期趋势</h3>
-        <div id="cycleChart" style="width:100%;height:300px;"></div>
-      </div>
-    </div>
-
-    <div class="table-section">
-      <h3>供应链明细数据 <span class="tip">（点击蓝色单元格可直接编辑，编辑后自动重新分析）</span></h3>
-      <div class="table-wrap">
-        <table id="dataTable">
-          <thead>
-            <tr>
-              <th>供应链</th>
-              <th>产品</th>
-              <th>区域</th>
-              <th>需求量</th>
-              <th>销量</th>
-              <th>库存</th>
-              <th>配送周期(天)</th>
-              <th>满足率</th>
-              <th>库存天数</th>
-              <th>状态</th>
-              <th>智能分析</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="toast" id="toast"></div>
   </div>
-  <script src="app.js"></script>
+  <div class="header-right">
+    <div class="header-time" id="currentTime"></div>
+    <button class="btn btn-secondary" onclick="exportData()">导出数据</button>
+    <button class="btn btn-success" onclick="openAddModal()">+ 新增记录</button>
+    <label class="btn btn-primary" style="cursor:pointer;">
+      上传Excel
+      <input type="file" accept=".xls,.xlsx" style="display:none;" onchange="handleFileUpload(event)">
+    </label>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('overview')">总览看板</div>
+  <div class="tab" onclick="switchTab('chains')">供应链分析</div>
+  <div class="tab" onclick="switchTab('cycles')">配送周期</div>
+  <div class="tab" onclick="switchTab('products')">品种销量</div>
+  <div class="tab" onclick="switchTab('finance')">货款回收</div>
+  <div class="tab" onclick="switchTab('data')">数据管理</div>
+  <div class="tab" onclick="switchTab('analysis')">智能分析</div>
+  <div class="tab" onclick="switchTab('upload')">数据上传</div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+<!-- ========== Overview Tab ========== -->
+<div class="tab-content active" id="tab-overview">
+  <div class="kpi-grid" id="kpiGrid"></div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">各供应链销量对比（包）</div>
+      <div class="chart-body" id="chartChainQty"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">月度销量趋势</div>
+      <div class="chart-body" id="chartMonthlyTrend"></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">品种销量分布</div>
+      <div class="chart-body" id="chartProductPie"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">辖区销量分布</div>
+      <div class="chart-body" id="chartRegionBar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Chains Tab ========== -->
+<div class="tab-content" id="tab-chains">
+  <div class="chain-grid" id="chainGrid"></div>
+  <div class="chart-card">
+    <div class="chart-title">供应链综合雷达图</div>
+    <div class="chart-body" id="chartRadar" style="height:400px;"></div>
+  </div>
+</div>
+
+<!-- ========== Cycles Tab ========== -->
+<div class="tab-content" id="tab-cycles">
+  <div class="kpi-grid" id="cycleKpi"></div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">各供应链平均配送周期（天）</div>
+      <div class="chart-body" id="chartCycleBar"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">配送频次时间线</div>
+      <div class="chart-body" id="chartCycleTimeline"></div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">各供应链月度配送频次热力图</div>
+    <div class="chart-body" id="chartHeatmap" style="height:400px;"></div>
+  </div>
+</div>
+
+<!-- ========== Products Tab ========== -->
+<div class="tab-content" id="tab-products">
+  <div class="kpi-grid" id="productKpi"></div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">品种销量柱状图</div>
+      <div class="chart-body" id="chartProductBar"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">品种销售额占比</div>
+      <div class="chart-body" id="chartProductAmount"></div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">各供应链品种销量堆叠图</div>
+    <div class="chart-body" id="chartStackProduct" style="height:400px;"></div>
+  </div>
+</div>
+
+<!-- ========== Finance Tab ========== -->
+<div class="tab-content" id="tab-finance">
+  <div class="kpi-grid" id="financeKpi"></div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">各供应链应收/已收货款对比</div>
+      <div class="chart-body" id="chartFinanceBar"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">回款率分析</div>
+      <div class="chart-body" id="chartFinanceRate"></div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">月度回款趋势</div>
+    <div class="chart-body" id="chartFinanceTrend" style="height:400px;"></div>
+  </div>
+</div>
+
+<!-- ========== Data Tab ========== -->
+<div class="tab-content" id="tab-data">
+  <div class="table-toolbar">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="搜索供应链名称、品种、辖区..." oninput="renderTable()">
+    </div>
+    <div class="select-group">
+      <select id="filterChain" onchange="renderTable()">
+        <option value="">全部供应链</option>
+      </select>
+      <select id="filterRegion" onchange="renderTable()">
+        <option value="">全部辖区</option>
+      </select>
+      <select id="filterProduct" onchange="renderTable()">
+        <option value="">全部品种</option>
+      </select>
+      <button class="btn btn-danger" onclick="deleteSelected()">删除选中</button>
+    </div>
+  </div>
+  <div class="data-table-wrap">
+    <div class="scrollable-table">
+      <table class="data-table" id="dataTable">
+        <thead>
+          <tr>
+            <th><input type="checkbox" onchange="toggleAll(this)"></th>
+            <th>ID</th>
+            <th>供应链名称</th>
+            <th>辖区</th>
+            <th>签收日期</th>
+            <th>品种</th>
+            <th>数量(包)</th>
+            <th>数量(件)</th>
+            <th>单价(元)</th>
+            <th>应收货款(元)</th>
+            <th>打款日期</th>
+            <th>已收金额(元)</th>
+            <th>发票号</th>
+            <th>备注</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      <span id="tableInfo">共 0 条记录</span>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Analysis Tab ========== -->
+<div class="tab-content" id="tab-analysis">
+  <div class="analysis-card" id="analysisOverview"></div>
+  <div class="analysis-card" id="analysisChains"></div>
+  <div class="analysis-card" id="analysisProducts"></div>
+  <div class="analysis-card" id="analysisFinance"></div>
+  <div class="analysis-card" id="analysisRisks"></div>
+</div>
+
+<!-- ========== Upload Tab ========== -->
+<div class="tab-content" id="tab-upload">
+  <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput2').click()">
+    <div class="upload-icon">📊</div>
+    <div class="upload-text">点击或拖拽 Excel 文件到此处上传</div>
+    <div class="upload-hint">支持 .xls / .xlsx 格式，上传后自动解析并更新看板数据</div>
+    <input type="file" id="fileInput2" accept=".xls,.xlsx" style="display:none;" onchange="handleFileUpload(event)">
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">上传说明</div>
+    <div class="analysis-text" style="line-height:2;">
+      <p><strong style="color:var(--accent-cyan)">支持的文件格式：</strong>.xls / .xlsx</p>
+      <p><strong style="color:var(--accent-cyan)">数据列要求：</strong></p>
+      <ul style="margin-left:20px; margin-top:8px;">
+        <li>供应链名称 - 供应链企业名称</li>
+        <li>所属辖区 - 负责人/辖区</li>
+        <li>签收日期 - 格式：YYYY-MM-DD 或 Excel 日期</li>
+        <li>品种 - 食盐品种名称</li>
+        <li>数量（包）- 数字</li>
+        <li>数量（件）- 数字</li>
+        <li>单价（包）- 元/包</li>
+        <li>应收货款 - 元</li>
+        <li>打款日期 - 格式：YYYY-MM-DD</li>
+        <li>金额 - 已收金额（元）</li>
+        <li>备注（发票号）- 发票编号</li>
+      </ul>
+      <p style="margin-top:12px;"><strong style="color:var(--accent-orange)">注意：</strong>上传新数据可选择"追加"或"覆盖"模式。追加模式保留现有数据并添加新记录；覆盖模式将清空现有数据后导入。</p>
+    </div>
+  </div>
+  <div class="chart-card" style="margin-top:16px;">
+    <div class="chart-title">上传模式</div>
+    <div style="display:flex; gap:16px; margin-top:12px;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="radio" name="uploadMode" value="append" checked> <span>追加模式 - 保留现有数据，添加新记录</span>
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="radio" name="uploadMode" value="replace"> <span>覆盖模式 - 清空现有数据，完全替换</span>
+      </label>
+    </div>
+  </div>
+  <div id="uploadPreview" class="hidden" style="margin-top:16px;">
+    <div class="chart-card">
+      <div class="chart-title">上传预览</div>
+      <div id="uploadPreviewContent"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end content -->
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">新增记录</div>
+    <div class="modal-form">
+      <div class="form-group">
+        <label class="form-label">供应链名称 *</label>
+        <input type="text" class="form-input" id="fChain" list="chainList">
+        <datalist id="chainList"></datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">所属辖区</label>
+        <input type="text" class="form-input" id="fRegion" list="regionList">
+        <datalist id="regionList"></datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">签收日期</label>
+        <input type="date" class="form-input" id="fSignDate">
+      </div>
+      <div class="form-group">
+        <label class="form-label">品种</label>
+        <input type="text" class="form-input" id="fProduct" list="productList">
+        <datalist id="productList"></datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">数量（包）</label>
+        <input type="number" class="form-input" id="fQtyBags" step="any">
+      </div>
+      <div class="form-group">
+        <label class="form-label">数量（件）</label>
+        <input type="number" class="form-input" id="fQtyCases" step="any">
+      </div>
+      <div class="form-group">
+        <label class="form-label">单价（元/包）</label>
+        <input type="number" class="form-input" id="fUnitPrice" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">应收货款（元）</label>
+        <input type="number" class="form-input" id="fReceivable" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">打款日期</label>
+        <input type="date" class="form-input" id="fPayDate">
+      </div>
+      <div class="form-group">
+        <label class="form-label">已收金额（元）</label>
+        <input type="number" class="form-input" id="fPaidAmount" step="0.01">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">发票号</label>
+        <input type="text" class="form-input" id="fInvoice">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">备注</label>
+        <input type="text" class="form-input" id="fRemark">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveRecord()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ==================== INITIAL DATA ====================
+const INITIAL_DATA = [{"id":1,"chain":"大美季供应链","region":"黄威","signDate":"2025-12-08","product":"云鹤牌绿盐精制碘盐400g","qtyBags":1500,"qtyCases":30,"unitPrice":1.5,"receivable":2250,"payDate":"2026-01-30","paidAmount":6000,"invoice":"58656136","remark":""},{"id":2,"chain":"大美季供应链","region":"黄威","signDate":"2025-12-22","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2500,"qtyCases":50,"unitPrice":1.5,"receivable":3750,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":3,"chain":"大美季供应链","region":"黄威","signDate":"2026-01-09","product":"云鹤牌绿盐精制碘盐400g","qtyBags":1500,"qtyCases":30,"unitPrice":1.5,"receivable":2250,"payDate":"2026-03-31","paidAmount":6750,"invoice":"655160266","remark":""},{"id":4,"chain":"大美季供应链","region":"黄威","signDate":"2026-01-21","product":"云鹤牌绿盐精制碘盐400g","qtyBags":3000,"qtyCases":60,"unitPrice":1.5,"receivable":4500,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":5,"chain":"大美季供应链","region":"黄威","signDate":"2026-03-13","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"2026-05-11","paidAmount":3000,"invoice":"1356053311","remark":""},{"id":6,"chain":"大美季供应链","region":"黄威","signDate":"2026-04-01","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"","paidAmount":0,"invoice":"1675398376","remark":""},{"id":7,"chain":"大美季供应链","region":"黄威","signDate":"","product":"云鹤牌50kg大袋盐","qtyBags":0,"qtyCases":10,"unitPrice":40,"receivable":400,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":8,"chain":"大美季供应链","region":"黄威","signDate":"2026-04-20","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2500,"qtyCases":50,"unitPrice":1.5,"receivable":3750,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":9,"chain":"大美季供应链","region":"黄威","signDate":"2026-05-06","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2500,"qtyCases":50,"unitPrice":1.5,"receivable":3750,"payDate":"","paidAmount":0,"invoice":"2095451851","remark":"5.22多开50件绿盐"},{"id":10,"chain":"大美季供应链","region":"黄威","signDate":"2026-06-02","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2500,"qtyCases":50,"unitPrice":1.5,"receivable":3750,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":11,"chain":"小满供应链","region":"黄威","signDate":"2025-08-27","product":"云鹤精制碘盐500g","qtyBags":1500,"qtyCases":30,"unitPrice":1.35,"receivable":2025.0,"payDate":"2025-09-28","paidAmount":8370,"invoice":"178827411","remark":""},{"id":12,"chain":"小满供应链","region":"黄威","signDate":"2025-09-05","product":"云鹤精制碘盐500g","qtyBags":2700,"qtyCases":54,"unitPrice":1.35,"receivable":3645.0,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":13,"chain":"小满供应链","region":"黄威","signDate":"2025-09-23","product":"云鹤精制碘盐500g","qtyBags":2000,"qtyCases":40,"unitPrice":1.35,"receivable":2700,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":14,"chain":"小满供应链","region":"黄威","signDate":"2026-10-13","product":"云鹤精制碘盐500g","qtyBags":2000,"qtyCases":40,"unitPrice":1.35,"receivable":2700,"payDate":"2025-11-13","paidAmount":5400,"invoice":"210865333","remark":""},{"id":15,"chain":"小满供应链","region":"黄威","signDate":"2026-10-27","product":"云鹤精制碘盐500g","qtyBags":2000,"qtyCases":40,"unitPrice":1.35,"receivable":2700,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":16,"chain":"小满供应链","region":"黄威","signDate":"2025-11-05","product":"云鹤精制碘盐500g","qtyBags":2000,"qtyCases":40,"unitPrice":1.35,"receivable":2700,"payDate":"2026-01-13","paidAmount":5400,"invoice":"228465681","remark":""},{"id":17,"chain":"小满供应链","region":"黄威","signDate":"2025-11-24","product":"云鹤精制碘盐500g","qtyBags":2000,"qtyCases":40,"unitPrice":1.35,"receivable":2700,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":18,"chain":"小满供应链","region":"黄威","signDate":"2025-12-15","product":"云鹤精制碘盐500g","qtyBags":2000,"qtyCases":40,"unitPrice":1.35,"receivable":2700,"payDate":"2026-05-06","paidAmount":7950,"invoice":"17444416","remark":""},{"id":19,"chain":"小满供应链","region":"黄威","signDate":"2025-12-01","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2500,"qtyCases":50,"unitPrice":1.5,"receivable":3750,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":20,"chain":"小满供应链","region":"黄威","signDate":"2025-12-25","product":"云鹤牌绿盐精制碘盐400g","qtyBags":1000,"qtyCases":20,"unitPrice":1.5,"receivable":1500,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":21,"chain":"小满供应链","region":"黄威","signDate":"2026-01-06","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"2026-05-27","paidAmount":3900,"invoice":"347810026","remark":""},{"id":22,"chain":"小满供应链","region":"黄威","signDate":"2026-01-23","product":"云鹤牌绿盐精制碘盐400g","qtyBags":600,"qtyCases":12,"unitPrice":1.5,"receivable":900,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":23,"chain":"小满供应链","region":"黄威","signDate":"2026-01-29","product":"云鹤牌绿盐精制碘盐400g","qtyBags":1000,"qtyCases":20,"unitPrice":1.5,"receivable":1500,"payDate":"2026-06-09","paidAmount":1500,"invoice":"703908316","remark":""},{"id":24,"chain":"小满供应链","region":"黄威","signDate":"2026-02-27","product":"云鹤精制碘盐500g","qtyBags":1000,"qtyCases":20,"unitPrice":1.4,"receivable":1400,"payDate":"2026-06-09","paidAmount":4400,"invoice":"703530106","remark":""},{"id":25,"chain":"小满供应链","region":"黄威","signDate":"","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":26,"chain":"小满供应链","region":"黄威","signDate":"2026-03-03","product":"云鹤精制碘盐500g","qtyBags":147,"qtyCases":2.94,"unitPrice":1.4,"receivable":205.8,"payDate":"","paidAmount":0,"invoice":"1128070111","remark":""},{"id":27,"chain":"小满供应链","region":"黄威","signDate":"2026-03-17","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":28,"chain":"小满供应链","region":"黄威","signDate":"2026-03-31","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"","paidAmount":0,"invoice":"1128202591","remark":""},{"id":29,"chain":"小满供应链","region":"黄威","signDate":"2026-04-12","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"","paidAmount":0,"invoice":"1605815806","remark":""},{"id":30,"chain":"小满供应链","region":"黄威","signDate":"2026-04-23","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":31,"chain":"小满供应链","region":"黄威","signDate":"2026-05-06","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"","paidAmount":0,"invoice":"2039303926","remark":""},{"id":32,"chain":"小满供应链","region":"黄威","signDate":"2026-05-15","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"","paidAmount":0,"invoice":"","remark":"5.22多开80件绿盐"},{"id":33,"chain":"小满供应链","region":"黄威","signDate":"2026-05-28","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":34,"chain":"小满供应链","region":"黄威","signDate":"2026-06-14","product":"云鹤牌绿盐精制碘盐400g","qtyBags":500,"qtyCases":10,"unitPrice":1.5,"receivable":750,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":35,"chain":"小满供应链","region":"黄威","signDate":"2026-06-15","product":"云鹤牌绿盐精制碘盐400g","qtyBags":800,"qtyCases":16,"unitPrice":1.5,"receivable":1200,"payDate":"","paidAmount":0,"invoice":"","remark":"6月18日多开40件"},{"id":36,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-03-28","product":"云鹤精制碘盐500g","qtyBags":3000,"qtyCases":60,"unitPrice":1.35,"receivable":4050,"payDate":"2025-03-31","paidAmount":4050,"invoice":"","remark":""},{"id":37,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-03-28","product":"云鹤精制碘盐500g","qtyBags":2500,"qtyCases":50,"unitPrice":1.35,"receivable":3663,"payDate":"2025-03-30","paidAmount":3663,"invoice":"","remark":""},{"id":38,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌未加碘盐400g","qtyBags":150,"qtyCases":3,"unitPrice":1.92,"receivable":0,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":39,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-04-12","product":"云鹤精制碘盐500g","qtyBags":2000,"qtyCases":40,"unitPrice":1.35,"receivable":2700,"payDate":"2025-04-29","paidAmount":4140,"invoice":"","remark":""},{"id":40,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌未加碘盐400g","qtyBags":350,"qtyCases":7,"unitPrice":1.92,"receivable":672,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":41,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-04-26","product":"云鹤牌未加碘盐400g","qtyBags":400,"qtyCases":8,"unitPrice":1.92,"receivable":768,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":42,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-04-27","product":"云鹤精制碘盐500g","qtyBags":1250,"qtyCases":25,"unitPrice":1.35,"receivable":1687.5,"payDate":"2025-04-29","paidAmount":1687.5,"invoice":"","remark":""},{"id":43,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-05-08","product":"云鹤精制碘盐500g","qtyBags":1500,"qtyCases":30,"unitPrice":1.35,"receivable":2025,"payDate":"2025-05-29","paidAmount":2697,"invoice":"","remark":""},{"id":44,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌未加碘盐400g","qtyBags":350,"qtyCases":7,"unitPrice":1.92,"receivable":672,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":45,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-05-23","product":"云鹤精制碘盐500g","qtyBags":1500,"qtyCases":30,"unitPrice":1.35,"receivable":2025,"payDate":"2025-05-29","paidAmount":2025,"invoice":"","remark":""},{"id":46,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-05-27","product":"云鹤精制碘盐500g","qtyBags":750,"qtyCases":15,"unitPrice":1.35,"receivable":1012.5,"payDate":"2025-05-30","paidAmount":2146.5,"invoice":"","remark":""},{"id":47,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌未加碘盐400g","qtyBags":200,"qtyCases":4,"unitPrice":1.92,"receivable":384,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":48,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌绿盐精制碘盐400g","qtyBags":500,"qtyCases":10,"unitPrice":1.5,"receivable":750,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":49,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-06-10","product":"云鹤精制碘盐500g","qtyBags":500,"qtyCases":10,"unitPrice":1.35,"receivable":675,"payDate":"2025-06-29","paidAmount":867,"invoice":"","remark":""},{"id":50,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌未加碘盐400g","qtyBags":100,"qtyCases":2,"unitPrice":1.92,"receivable":192,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":51,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-06-11","product":"云鹤精制碘盐500g","qtyBags":500,"qtyCases":10,"unitPrice":1.35,"receivable":675,"payDate":"2025-07-04","paidAmount":675,"invoice":"","remark":""},{"id":52,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-06-17","product":"云鹤精制碘盐500g","qtyBags":250,"qtyCases":5,"unitPrice":1.35,"receivable":337.5,"payDate":"2025-06-29","paidAmount":337.5,"invoice":"","remark":""},{"id":53,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌未加碘盐400g","qtyBags":50,"qtyCases":1,"unitPrice":1.92,"receivable":96,"payDate":"2025-06-29","paidAmount":433.5,"invoice":"","remark":""},{"id":54,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-06-23","product":"云鹤精制碘盐500g","qtyBags":250,"qtyCases":5,"unitPrice":1.35,"receivable":337.5,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":55,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-06-24","product":"云鹤精制碘盐500g","qtyBags":500,"qtyCases":10,"unitPrice":1.35,"receivable":675,"payDate":"2025-07-04","paidAmount":675,"invoice":"","remark":""},{"id":56,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-06-26","product":"云鹤精制碘盐500g","qtyBags":100,"qtyCases":2,"unitPrice":1.35,"receivable":135,"payDate":"2025-07-04","paidAmount":675,"invoice":"","remark":""},{"id":57,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-07-01","product":"云鹤精制碘盐500g","qtyBags":150,"qtyCases":3,"unitPrice":1.35,"receivable":202.5,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":58,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-07-26","product":"云鹤精制碘盐500g","qtyBags":250,"qtyCases":5,"unitPrice":1.35,"receivable":337.5,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":59,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-08-27","product":"云鹤精制碘盐500g","qtyBags":5000,"qtyCases":100,"unitPrice":1.35,"receivable":6750,"payDate":"2025-08-31","paidAmount":8670,"invoice":"","remark":""},{"id":60,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌未加碘盐400g","qtyBags":1000,"qtyCases":20,"unitPrice":1.92,"receivable":1920,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":61,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-10-10","product":"云鹤精制碘盐500g","qtyBags":2500,"qtyCases":50,"unitPrice":1.35,"receivable":3375,"payDate":"2025-10-31","paidAmount":5295,"invoice":"","remark":""},{"id":62,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌未加碘盐400g","qtyBags":500,"qtyCases":10,"unitPrice":1.92,"receivable":960,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":63,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-10-31","product":"云鹤牌未加碘盐400g","qtyBags":500,"qtyCases":10,"unitPrice":1.92,"receivable":960,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":64,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-11-11","product":"云鹤精制碘盐500g","qtyBags":2500,"qtyCases":50,"unitPrice":1.35,"receivable":3375,"payDate":"2026-01-05","paidAmount":3855,"invoice":"225533226","remark":"寄存38袋无碘盐"},{"id":65,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌未加碘盐400g","qtyBags":250,"qtyCases":5,"unitPrice":1.92,"receivable":480,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":66,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-12-02","product":"云鹤精制碘盐400g","qtyBags":2500,"qtyCases":50,"unitPrice":1.5,"receivable":3750,"payDate":"2026-02-02","paidAmount":7500,"invoice":"242844632","remark":""},{"id":67,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2025-12-22","product":"云鹤精制碘盐400g","qtyBags":2500,"qtyCases":50,"unitPrice":1.5,"receivable":3750,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":68,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2026-01-12","product":"云鹤精制碘盐400g","qtyBags":750,"qtyCases":15,"unitPrice":1.5,"receivable":1125,"payDate":"2026-03-09","paidAmount":1142.55,"invoice":"338105656","remark":""},{"id":69,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2026-01-23","product":"云鹤精制碘盐500g","qtyBags":13,"qtyCases":0.26,"unitPrice":1.35,"receivable":17.55,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":70,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2026-02-27","product":"云鹤精制碘盐500g","qtyBags":500,"qtyCases":10,"unitPrice":1.4,"receivable":700,"payDate":"2026-04-30","paidAmount":8584,"invoice":"1127856961","remark":"取走寄存38袋无碘盐"},{"id":71,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":72,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌未加碘盐400g","qtyBags":200,"qtyCases":4,"unitPrice":1.92,"receivable":384,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":73,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2026-03-06","product":"云鹤精制碘盐400g","qtyBags":3000,"qtyCases":60,"unitPrice":1.5,"receivable":4500,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":74,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2026-04-06","product":"云鹤精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"2026-06-01","paidAmount":3384,"invoice":"1541423176","remark":""},{"id":75,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌未加碘盐400g","qtyBags":200,"qtyCases":4,"unitPrice":1.92,"receivable":384,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":76,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2026-05-05","product":"云鹤精制碘盐500g","qtyBags":200,"qtyCases":4,"unitPrice":1.4,"receivable":280,"payDate":"","paidAmount":0,"invoice":"1907791096","remark":""},{"id":77,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":78,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"","product":"云鹤牌未加碘盐400g","qtyBags":200,"qtyCases":4,"unitPrice":1.92,"receivable":384,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":79,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2026-05-26","product":"云鹤精制碘盐400g","qtyBags":2000,"qtyCases":40,"unitPrice":1.5,"receivable":3000,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":80,"chain":"乐禾乐苗供应链","region":"赵潇荣","signDate":"2026-06-16","product":"云鹤精制碘盐400g","qtyBags":600,"qtyCases":12,"unitPrice":1.5,"receivable":900,"payDate":"","paidAmount":0,"invoice":"","remark":"6月18日多开40+40=80件"},{"id":81,"chain":"民华农业供应链","region":"赵潇荣","signDate":"2025-10-31","product":"云鹤精制碘盐500g","qtyBags":4450,"qtyCases":89,"unitPrice":1.4,"receivable":6230,"payDate":"2025-12-22","paidAmount":6230,"invoice":"228025106","remark":""},{"id":82,"chain":"民华农业供应链","region":"赵潇荣","signDate":"2025-12-02","product":"云鹤牌绿盐精制碘盐400g","qtyBags":5000,"qtyCases":100,"unitPrice":1.5,"receivable":7500,"payDate":"2026-02-12","paidAmount":7500,"invoice":"21633811","remark":""},{"id":83,"chain":"民华农业供应链","region":"赵潇荣","signDate":"2026-01-04","product":"云鹤牌绿盐精制碘盐400g","qtyBags":3500,"qtyCases":70,"unitPrice":1.5,"receivable":5250,"payDate":"2026-03-05","paidAmount":5250,"invoice":"767330926","remark":""},{"id":84,"chain":"民华农业供应链","region":"赵潇荣","signDate":"2026-03-02","product":"云鹤牌绿盐精制碘盐400g","qtyBags":5000,"qtyCases":100,"unitPrice":1.5,"receivable":7500,"payDate":"2026-04-29","paidAmount":7500,"invoice":"1534290766","remark":""},{"id":85,"chain":"民华农业供应链","region":"赵潇荣","signDate":"2026-03-31","product":"云鹤牌绿盐精制碘盐400g","qtyBags":5000,"qtyCases":100,"unitPrice":1.5,"receivable":7500,"payDate":"","paidAmount":0,"invoice":"已换票","remark":""},{"id":86,"chain":"民华农业供应链","region":"赵潇荣","signDate":"2026-05-07","product":"云鹤牌绿盐精制碘盐400g","qtyBags":5000,"qtyCases":100,"unitPrice":1.5,"receivable":7500,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":87,"chain":"民华农业供应链","region":"赵潇荣","signDate":"2026-06-15","product":"云鹤牌绿盐精制碘盐400g","qtyBags":750,"qtyCases":15,"unitPrice":1.5,"receivable":1125,"payDate":"","paidAmount":0,"invoice":"","remark":"6月18日多开100+100=200件"},{"id":88,"chain":"旭膳供应链","region":"李光元","signDate":"2025-12-31","product":"云鹤精制碘盐500g","qtyBags":2500,"qtyCases":50,"unitPrice":1.4,"receivable":3500,"payDate":"2026-03-31","paidAmount":3500,"invoice":"632336266","remark":""},{"id":89,"chain":"旭膳供应链","region":"李光元","signDate":"2026-01-30","product":"云鹤精制碘盐500g","qtyBags":2500,"qtyCases":50,"unitPrice":1.4,"receivable":3500,"payDate":"2026-03-31","paidAmount":7000,"invoice":"868963606","remark":""},{"id":90,"chain":"旭膳供应链","region":"李光元","signDate":"2026-02-12","product":"云鹤精制碘盐500g","qtyBags":2500,"qtyCases":50,"unitPrice":1.4,"receivable":3500,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":91,"chain":"旭膳供应链","region":"李光元","signDate":"2026-03-19","product":"云鹤精制碘盐500g","qtyBags":2500,"qtyCases":50,"unitPrice":1.4,"receivable":3500,"payDate":"2026-04-28","paidAmount":3500,"invoice":"1254819346","remark":""},{"id":92,"chain":"旭膳供应链","region":"李光元","signDate":"2026-04-20","product":"云鹤精制碘盐500g","qtyBags":2500,"qtyCases":50,"unitPrice":1.4,"receivable":3500,"payDate":"2026-05-14","paidAmount":3500,"invoice":"1534870846","remark":""},{"id":93,"chain":"旭膳供应链","region":"李光元","signDate":"2026-05-15","product":"云鹤精制碘盐500g","qtyBags":400,"qtyCases":8,"unitPrice":1.4,"receivable":560,"payDate":"2026-06-10","paidAmount":3500,"invoice":"1883176021","remark":""},{"id":94,"chain":"旭膳供应链","region":"李光元","signDate":"2026-05-26","product":"云鹤精制碘盐500g","qtyBags":2100,"qtyCases":42,"unitPrice":1.4,"receivable":2940,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":95,"chain":"旭膳供应链","region":"李光元","signDate":"2026-06-16","product":"云鹤精制碘盐500g","qtyBags":2500,"qtyCases":50,"unitPrice":1.4,"receivable":3500,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":96,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2025-08-26","product":"云鹤精制碘盐500g","qtyBags":2500,"qtyCases":50,"unitPrice":1.4,"receivable":3500,"payDate":"2025-09-01","paidAmount":3500,"invoice":"160062618","remark":""},{"id":97,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2025-09-23","product":"云鹤精制碘盐500g","qtyBags":2500,"qtyCases":50,"unitPrice":1.4,"receivable":3500,"payDate":"2025-09-26","paidAmount":3500,"invoice":"177170211","remark":""},{"id":98,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2025-10-24","product":"云鹤精制碘盐500g","qtyBags":2500,"qtyCases":50,"unitPrice":1.4,"receivable":3500,"payDate":"2025-10-24","paidAmount":3500,"invoice":"197828875","remark":""},{"id":99,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2025-11-20","product":"云鹤精制碘盐500g","qtyBags":150,"qtyCases":3,"unitPrice":1.4,"receivable":210,"payDate":"2025-12-29","paidAmount":3960,"invoice":"235561383","remark":""},{"id":100,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2025-12-02","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2500,"qtyCases":50,"unitPrice":1.5,"receivable":3750,"payDate":"","paidAmount":0,"invoice":"236799983","remark":""},{"id":101,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2025-12-22","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2500,"qtyCases":50,"unitPrice":1.5,"receivable":3750,"payDate":"2026-01-20","paidAmount":3750,"invoice":"247871469","remark":""},{"id":102,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2026-01-19","product":"云鹤牌绿盐精制碘盐400g","qtyBags":1000,"qtyCases":20,"unitPrice":1.5,"receivable":1500,"payDate":"2026-03-09","paidAmount":1500,"invoice":"290090731","remark":""},{"id":103,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2026-02-05","product":"云鹤牌绿盐精制碘盐400g","qtyBags":1500,"qtyCases":30,"unitPrice":1.5,"receivable":2250,"payDate":"2026-04-15","paidAmount":2250,"invoice":"703395061","remark":""},{"id":104,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2026-03-04","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2500,"qtyCases":50,"unitPrice":1.5,"receivable":3750,"payDate":"2026-04-27","paidAmount":3750,"invoice":"1045774336","remark":""},{"id":105,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2026-04-02","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2500,"qtyCases":50,"unitPrice":1.5,"receivable":3750,"payDate":"2026-05-26","paidAmount":7500,"invoice":"1620251431","remark":""},{"id":106,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2026-04-27","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2500,"qtyCases":50,"unitPrice":1.5,"receivable":3750,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":107,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2026-05-22","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2500,"qtyCases":20,"unitPrice":1.5,"receivable":1500,"payDate":"","paidAmount":0,"invoice":"","remark":""},{"id":108,"chain":"麦惠供应链（肖）","region":"肖丽","signDate":"2026-06-01","product":"云鹤牌绿盐精制碘盐400g","qtyBags":2500,"qtyCases":20,"unitPrice":1.5,"receivable":1500,"payDate":"","paidAmount":0,"invoice":"","remark":"6月18日多开40件"}];
+
+// ==================== STATE ====================
+let allData = [];
+let currentPage = 1;
+const pageSize = 20;
+let editingId = null;
+let charts = {};
+const STORAGE_KEY = 'salt_supply_chain_data_v1';
+
+// ==================== INIT ====================
+function init() {
+  loadData();
+  initFilters();
+  renderAll();
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Drag and drop
+  const uploadArea = document.getElementById('uploadArea');
+  if (uploadArea) {
+    uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+    uploadArea.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        processExcelFile(file);
+      }
+    });
+  }
+}
+
+function loadData() {
+  // Try localStorage first, then use initial data
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    try {
+      allData = JSON.parse(stored);
+    } catch(e) {
+      allData = [...INITIAL_DATA];
+    }
+  } else {
+    allData = [...INITIAL_DATA];
+    saveData();
+  }
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
+}
+
+function updateClock() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('currentTime').textContent =
+    `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
+// ==================== TABS ====================
+function switchTab(tabId) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const tabs = ['overview','chains','cycles','products','finance','data','analysis','upload'];
+    t.classList.toggle('active', tabs[i] === tabId);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+
+  // Render tab-specific content
+  setTimeout(() => {
+    if (tabId === 'overview') renderOverview();
+    if (tabId === 'chains') renderChains();
+    if (tabId === 'cycles') renderCycles();
+    if (tabId === 'products') renderProducts();
+    if (tabId === 'finance') renderFinance();
+    if (tabId === 'data') renderTable();
+    if (tabId === 'analysis') renderAnalysis();
+  }, 50);
+}
+
+function renderAll() {
+  renderOverview();
+}
+
+// ==================== HELPERS ====================
+function fmtNum(n) {
+  if (n === '' || n === null || n === undefined || isNaN(n)) return 0;
+  return Number(n);
+}
+function fmtMoney(n) {
+  return fmtNum(n).toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+function fmtDate(d) {
+  if (!d) return '';
+  if (typeof d === 'number') {
+    // Excel serial date
+    const date = new Date((d - 25569) * 86400 * 1000);
+    return date.toISOString().slice(0, 10);
+  }
+  return d;
+}
+function unique(arr) { return [...new Set(arr.filter(Boolean))]; }
+
+function getChainStats(records) {
+  const chains = {};
+  records.forEach(r => {
+    if (!chains[r.chain]) chains[r.chain] = { name: r.chain, region: r.region, records: [], qtyBags: 0, qtyCases: 0, receivable: 0, paid: 0, dates: [] };
+    chains[r.chain].records.push(r);
+    chains[r.chain].qtyBags += fmtNum(r.qtyBags);
+    chains[r.chain].qtyCases += fmtNum(r.qtyCases);
+    chains[r.chain].receivable += fmtNum(r.receivable);
+    chains[r.chain].paid += fmtNum(r.paidAmount);
+    if (r.signDate) chains[r.chain].dates.push(r.signDate);
+  });
+  return chains;
+}
+
+function getAvgCycleDays(dates) {
+  if (!dates || dates.length < 2) return 0;
+  const sorted = dates.filter(d => d).sort();
+  let totalDays = 0;
+  let count = 0;
+  for (let i = 1; i < sorted.length; i++) {
+    const d1 = new Date(sorted[i-1]);
+    const d2 = new Date(sorted[i]);
+    const diff = (d2 - d1) / (1000 * 60 * 60 * 24);
+    if (diff > 0 && diff < 365) {
+      totalDays += diff;
+      count++;
+    }
+  }
+  return count > 0 ? Math.round(totalDays / count) : 0;
+}
+
+// ==================== OVERVIEW ====================
+function renderOverview() {
+  const records = allData;
+  const chains = getChainStats(records);
+  const totalQty = records.reduce((s, r) => s + fmtNum(r.qtyBags), 0);
+  const totalCases = records.reduce((s, r) => s + fmtNum(r.qtyCases), 0);
+  const totalReceivable = records.reduce((s, r) => s + fmtNum(r.receivable), 0);
+  const totalPaid = records.reduce((s, r) => s + fmtNum(r.paidAmount), 0);
+  const allDates = records.map(r => r.signDate).filter(d => d).sort();
+  const dateRange = allDates.length > 0 ? `${allDates[0]} ~ ${allDates[allDates.length-1]}` : '-';
+  const collectionRate = totalReceivable > 0 ? (totalPaid / totalReceivable * 100).toFixed(1) : 0;
+  const products = unique(records.map(r => r.product));
+
+  // KPI Cards
+  const kpiHtml = `
+    <div class="kpi-card cyan">
+      <div class="kpi-label">总配送量（包）</div>
+      <div class="kpi-value">${fmtMoney(totalQty)}</div>
+      <div class="kpi-sub">合计 ${fmtMoney(totalCases)} 件</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">供应链数量</div>
+      <div class="kpi-value">${Object.keys(chains).length}</div>
+      <div class="kpi-sub">覆盖 ${unique(records.map(r=>r.region)).length} 个辖区</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">应收货款总额</div>
+      <div class="kpi-value">¥${fmtMoney(totalReceivable)}</div>
+      <div class="kpi-sub">已收 ¥${fmtMoney(totalPaid)}</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">回款率</div>
+      <div class="kpi-value">${collectionRate}%</div>
+      <div class="kpi-sub">未收 ¥${fmtMoney(totalReceivable - totalPaid)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">食盐品种数</div>
+      <div class="kpi-value">${products.length}</div>
+      <div class="kpi-sub">${products.slice(0,3).join('、')}${products.length>3?'...':''}</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">数据时间范围</div>
+      <div class="kpi-value" style="font-size:16px;">${dateRange}</div>
+      <div class="kpi-sub">共 ${records.length} 条记录</div>
+    </div>
+  `;
+  document.getElementById('kpiGrid').innerHTML = kpiHtml;
+
+  // Chart: Chain Qty
+  renderChainQtyChart(chains);
+  // Chart: Monthly Trend
+  renderMonthlyTrendChart(records);
+  // Chart: Product Pie
+  renderProductPieChart(records);
+  // Chart: Region Bar
+  renderRegionBarChart(records);
+}
+
+function renderChainQtyChart(chains) {
+  const el = document.getElementById('chartChainQty');
+  if (!el) return;
+  if (charts.chainQty) charts.chainQty.dispose();
+  charts.chainQty = echarts.init(el);
+  const names = Object.values(chains).map(c => c.name);
+  const qtys = Object.values(chains).map(c => c.qtyBags);
+  charts.chainQty.setOption({
+    tooltip: { trigger: 'axis', formatter: p => `${p[0].name}<br/>销量: ${fmtMoney(p[0].value)} 包` },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: names, axisLabel: { color: '#8899aa', rotate: 15 }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    yAxis: { type: 'value', axisLabel: { color: '#8899aa' }, splitLine: { lineStyle: { color: '#2a3a4a' } } },
+    series: [{
+      type: 'bar',
+      data: qtys,
+      itemStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: '#00d4ff' }, { offset: 1, color: '#0066aa' }
+        ]),
+        borderRadius: [4, 4, 0, 0]
+      },
+      barWidth: '50%',
+      label: { show: true, position: 'top', color: '#e0e6ed', fontSize: 11 }
+    }]
+  });
+}
+
+function renderMonthlyTrendChart(records) {
+  const el = document.getElementById('chartMonthlyTrend');
+  if (!el) return;
+  if (charts.monthlyTrend) charts.monthlyTrend.dispose();
+  charts.monthlyTrend = echarts.init(el);
+
+  const months = {};
+  records.forEach(r => {
+    if (r.signDate) {
+      const m = r.signDate.slice(0, 7);
+      if (!months[m]) months[m] = 0;
+      months[m] += fmtNum(r.qtyBags);
+    }
+  });
+  const sortedMonths = Object.keys(months).sort();
+  const data = sortedMonths.map(m => months[m]);
+
+  charts.monthlyTrend.setOption({
+    tooltip: { trigger: 'axis', formatter: p => `${p[0].name}<br/>销量: ${fmtMoney(p[0].value)} 包` },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: sortedMonths, axisLabel: { color: '#8899aa', rotate: 30 }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    yAxis: { type: 'value', axisLabel: { color: '#8899aa' }, splitLine: { lineStyle: { color: '#2a3a4a' } } },
+    series: [{
+      type: 'line',
+      data: data,
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 8,
+      lineStyle: { width: 3, color: '#00d4ff' },
+      itemStyle: { color: '#00d4ff', borderColor: '#0f1923', borderWidth: 2 },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(0,212,255,0.3)' }, { offset: 1, color: 'rgba(0,212,255,0.01)' }
+        ])
+      }
+    }]
+  });
+}
+
+function renderProductPieChart(records) {
+  const el = document.getElementById('chartProductPie');
+  if (!el) return;
+  if (charts.productPie) charts.productPie.dispose();
+  charts.productPie = echarts.init(el);
+
+  const products = {};
+  records.forEach(r => {
+    const p = r.product || '未分类';
+    if (!products[p]) products[p] = 0;
+    products[p] += fmtNum(r.qtyBags);
+  });
+
+  const colors = ['#00d4ff', '#00e676', '#ff9800', '#ab47bc', '#ff5252', '#42a5f5'];
+  charts.productPie.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c} 包 ({d}%)' },
+    legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { color: '#8899aa' } },
+    color: colors,
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      center: ['40%', '50%'],
+      data: Object.entries(products).map(([name, value]) => ({ name, value })),
+      label: { color: '#e0e6ed', fontSize: 12 },
+      itemStyle: { borderColor: '#0f1923', borderWidth: 2 }
+    }]
+  });
+}
+
+function renderRegionBarChart(records) {
+  const el = document.getElementById('chartRegionBar');
+  if (!el) return;
+  if (charts.regionBar) charts.regionBar.dispose();
+  charts.regionBar = echarts.init(el);
+
+  const regions = {};
+  records.forEach(r => {
+    const reg = r.region || '未知';
+    if (!regions[reg]) regions[reg] = { qty: 0, chains: new Set() };
+    regions[reg].qty += fmtNum(r.qtyBags);
+    regions[reg].chains.add(r.chain);
+  });
+
+  const names = Object.keys(regions);
+  charts.regionBar.setOption({
+    tooltip: { trigger: 'axis', formatter: p => {
+      const r = regions[p[0].name];
+      return `${p[0].name}<br/>销量: ${fmtMoney(p[0].value)} 包<br/>供应链: ${r.chains.size} 家`;
+    }},
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'value', axisLabel: { color: '#8899aa' }, splitLine: { lineStyle: { color: '#2a3a4a' } } },
+    yAxis: { type: 'category', data: names, axisLabel: { color: '#8899aa' }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    series: [{
+      type: 'bar',
+      data: names.map(n => regions[n].qty),
+      itemStyle: {
+        color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+          { offset: 0, color: '#ab47bc' }, { offset: 1, color: '#7b1fa2' }
+        ]),
+        borderRadius: [0, 4, 4, 0]
+      },
+      barWidth: '50%',
+      label: { show: true, position: 'right', color: '#e0e6ed', fontSize: 11 }
+    }]
+  });
+}
+
+// ==================== CHAINS ====================
+function renderChains() {
+  const chains = getChainStats(allData);
+  const maxQty = Math.max(...Object.values(chains).map(c => c.qtyBags), 1);
+  const totalReceivable = Object.values(chains).reduce((s, c) => s + c.receivable, 0);
+
+  let html = '';
+  Object.values(chains).forEach(c => {
+    const rate = c.receivable > 0 ? (c.paid / c.receivable * 100).toFixed(1) : 0;
+    const avgCycle = getAvgCycleDays(c.dates);
+    const status = rate >= 80 ? 'good' : rate >= 50 ? 'warn' : 'bad';
+    const statusText = rate >= 80 ? '回款良好' : rate >= 50 ? '回款一般' : '回款不足';
+    const colors = ['#00d4ff','#00e676','#ff9800','#ab47bc','#ff5252','#42a5f5'];
+    const colorIdx = Object.keys(chains).indexOf(c.name) % colors.length;
+
+    html += `
+      <div class="chain-card">
+        <div class="chain-header">
+          <div>
+            <div class="chain-name">${c.name}</div>
+            <div class="chain-region">辖区: ${c.region || '-'}</div>
+          </div>
+          <div class="badge badge-blue">${c.records.length} 单</div>
+        </div>
+        <div class="chain-stats">
+          <div class="chain-stat">
+            <div class="chain-stat-label">总销量（包）</div>
+            <div class="chain-stat-value">${fmtMoney(c.qtyBags)}</div>
+            <div class="chain-stat-sub">${fmtMoney(c.qtyCases)} 件</div>
+          </div>
+          <div class="chain-stat">
+            <div class="chain-stat-label">应收货款</div>
+            <div class="chain-stat-value">¥${fmtMoney(c.receivable)}</div>
+            <div class="chain-stat-sub">已收 ¥${fmtMoney(c.paid)}</div>
+          </div>
+          <div class="chain-stat">
+            <div class="chain-stat-label">回款率</div>
+            <div class="chain-stat-value">${rate}%</div>
+            <div class="chain-stat-sub">未收 ¥${fmtMoney(c.receivable - c.paid)}</div>
+          </div>
+          <div class="chain-stat">
+            <div class="chain-stat-label">平均配送周期</div>
+            <div class="chain-stat-value">${avgCycle} 天</div>
+            <div class="chain-stat-sub">${c.dates.length} 次配送</div>
+          </div>
+        </div>
+        <div class="chain-bar">
+          <div class="chain-bar-fill" style="width:${(c.qtyBags/maxQty*100).toFixed(1)}%; background:${colors[colorIdx]};"></div>
+        </div>
+        <div class="chain-status ${status}">状态: ${statusText} | 占比: ${(c.qtyBags / Object.values(chains).reduce((s,x)=>s+x.qtyBags,0) * 100).toFixed(1)}%</div>
+      </div>
+    `;
+  });
+  document.getElementById('chainGrid').innerHTML = html;
+
+  // Radar chart
+  renderRadarChart(chains);
+}
+
+function renderRadarChart(chains) {
+  const el = document.getElementById('chartRadar');
+  if (!el) return;
+  if (charts.radar) charts.radar.dispose();
+  charts.radar = echarts.init(el);
+
+  const chainList = Object.values(chains);
+  const maxQty = Math.max(...chainList.map(c => c.qtyBags));
+  const maxReceivable = Math.max(...chainList.map(c => c.receivable));
+  const maxOrders = Math.max(...chainList.map(c => c.records.length));
+  const maxCycle = Math.max(...chainList.map(c => getAvgCycleDays(c.dates)), 1);
+  const maxRate = 100;
+
+  charts.radar.setOption({
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 10, textStyle: { color: '#8899aa' } },
+    radar: {
+      indicator: [
+        { name: '销量', max: maxQty },
+        { name: '货款', max: maxReceivable },
+        { name: '订单数', max: maxOrders },
+        { name: '配送周期', max: maxCycle },
+        { name: '回款率', max: maxRate }
+      ],
+      center: ['50%', '50%'],
+      radius: '65%',
+      axisName: { color: '#e0e6ed', fontSize: 12 },
+      splitLine: { lineStyle: { color: '#2a3a4a' } },
+      splitArea: { areaStyle: { color: ['rgba(0,168,255,0.02)', 'rgba(0,168,255,0.05)'] } },
+      axisLine: { lineStyle: { color: '#2a3a4a' } }
+    },
+    series: [{
+      type: 'radar',
+      data: chainList.map((c, i) => ({
+        name: c.name,
+        value: [
+          c.qtyBags,
+          c.receivable,
+          c.records.length,
+          getAvgCycleDays(c.dates),
+          c.receivable > 0 ? Number((c.paid / c.receivable * 100).toFixed(1)) : 0
+        ],
+        lineStyle: { width: 2 },
+        areaStyle: { opacity: 0.1 }
+      }))
+    }],
+    color: ['#00d4ff', '#00e676', '#ff9800', '#ab47bc', '#ff5252', '#42a5f5']
+  });
+}
+
+// ==================== CYCLES ====================
+function renderCycles() {
+  const chains = getChainStats(allData);
+  const chainList = Object.values(chains);
+  const cycles = chainList.map(c => getAvgCycleDays(c.dates));
+  const avgCycle = cycles.length > 0 ? Math.round(cycles.reduce((a,b)=>a+b,0) / cycles.length) : 0;
+  const totalDeliveries = allData.filter(r => r.signDate).length;
+  const maxCycle = Math.max(...cycles, 0);
+  const minCycle = Math.min(...cycles.filter(c => c > 0), 0);
+
+  // KPI
+  document.getElementById('cycleKpi').innerHTML = `
+    <div class="kpi-card cyan">
+      <div class="kpi-label">平均配送周期</div>
+      <div class="kpi-value">${avgCycle} <span class="kpi-unit">天</span></div>
+      <div class="kpi-sub">所有供应链平均</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">总配送次数</div>
+      <div class="kpi-value">${totalDeliveries}</div>
+      <div class="kpi-sub">有签收日期记录</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">最长周期</div>
+      <div class="kpi-value">${maxCycle} <span class="kpi-unit">天</span></div>
+      <div class="kpi-sub">配送间隔最大</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">最短周期</div>
+      <div class="kpi-value">${minCycle} <span class="kpi-unit">天</span></div>
+      <div class="kpi-sub">配送最频繁</div>
+    </div>
+  `;
+
+  // Cycle bar
+  const el1 = document.getElementById('chartCycleBar');
+  if (charts.cycleBar) charts.cycleBar.dispose();
+  charts.cycleBar = echarts.init(el1);
+  charts.cycleBar.setOption({
+    tooltip: { trigger: 'axis', formatter: p => `${p[0].name}<br/>平均周期: ${p[0].value} 天` },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: chainList.map(c=>c.name), axisLabel: { color: '#8899aa', rotate: 15 }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    yAxis: { type: 'value', name: '天', axisLabel: { color: '#8899aa' }, splitLine: { lineStyle: { color: '#2a3a4a' } } },
+    series: [{
+      type: 'bar',
+      data: cycles,
+      itemStyle: {
+        color: function(params) {
+          const v = params.value;
+          if (v <= 14) return '#00e676';
+          if (v <= 21) return '#ff9800';
+          return '#ff5252';
+        },
+        borderRadius: [4, 4, 0, 0]
+      },
+      label: { show: true, position: 'top', color: '#e0e6ed', fontSize: 11, formatter: '{c}天' }
+    }]
+  });
+
+  // Timeline scatter
+  const el2 = document.getElementById('chartCycleTimeline');
+  if (charts.cycleTimeline) charts.cycleTimeline.dispose();
+  charts.cycleTimeline = echarts.init(el2);
+  const scatterData = [];
+  chainList.forEach((c, ci) => {
+    c.records.forEach(r => {
+      if (r.signDate) {
+        scatterData.push([r.signDate, ci, fmtNum(r.qtyBags), r.product]);
+      }
+    });
+  });
+  charts.cycleTimeline.setOption({
+    tooltip: { formatter: p => {
+      const chainName = chainList[p.data[1]].name;
+      return `${p.data[0]}<br/>供应链: ${chainName}<br/>品种: ${p.data[3]}<br/>数量: ${fmtMoney(p.data[2])} 包`;
+    }},
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'time', axisLabel: { color: '#8899aa' }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    yAxis: { type: 'category', data: chainList.map(c=>c.name), axisLabel: { color: '#8899aa' }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    series: [{
+      type: 'scatter',
+      data: scatterData,
+      symbolSize: function(data) { return Math.max(8, Math.min(30, data[2] / 200)); },
+      itemStyle: { color: '#00d4ff', opacity: 0.7 }
+    }]
+  });
+
+  // Heatmap
+  renderHeatmap(chainList);
+}
+
+function renderHeatmap(chainList) {
+  const el = document.getElementById('chartHeatmap');
+  if (charts.heatmap) charts.heatmap.dispose();
+  charts.heatmap = echarts.init(el);
+
+  const months = [];
+  const monthSet = new Set();
+  chainList.forEach(c => {
+    c.records.forEach(r => {
+      if (r.signDate) {
+        const m = r.signDate.slice(0, 7);
+        monthSet.add(m);
+      }
+    });
+  });
+  months.push(...[...monthSet].sort());
+
+  const data = [];
+  let maxVal = 0;
+  chainList.forEach((c, ci) => {
+    months.forEach((m, mi) => {
+      const count = c.records.filter(r => r.signDate && r.signDate.slice(0,7) === m).length;
+      data.push([mi, ci, count]);
+      if (count > maxVal) maxVal = count;
+    });
+  });
+
+  charts.heatmap.setOption({
+    tooltip: { position: 'top', formatter: p => `${months[p.data[0]]}<br/>${chainList[p.data[1]].name}<br/>配送: ${p.data[2]} 次` },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: months, axisLabel: { color: '#8899aa', rotate: 30 }, splitArea: { show: true }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    yAxis: { type: 'category', data: chainList.map(c=>c.name), axisLabel: { color: '#8899aa' }, splitArea: { show: true }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    visualMap: {
+      min: 0, max: maxVal || 1,
+      calculable: true, orient: 'horizontal', left: 'center', bottom: 5,
+      textStyle: { color: '#8899aa' },
+      inRange: { color: ['#1a2332', '#0066aa', '#00d4ff', '#ff9800', '#ff5252'] }
+    },
+    series: [{
+      type: 'heatmap',
+      data: data,
+      label: { show: true, color: '#fff', fontSize: 11 },
+      emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } }
+    }]
+  });
+}
+
+// ==================== PRODUCTS ====================
+function renderProducts() {
+  const records = allData;
+  const productMap = {};
+  records.forEach(r => {
+    const p = r.product || '未分类';
+    if (!productMap[p]) productMap[p] = { name: p, qty: 0, cases: 0, amount: 0, orders: 0 };
+    productMap[p].qty += fmtNum(r.qtyBags);
+    productMap[p].cases += fmtNum(r.qtyCases);
+    productMap[p].amount += fmtNum(r.receivable);
+    productMap[p].orders++;
+  });
+  const products = Object.values(productMap).sort((a,b) => b.qty - a.qty);
+  const totalQty = products.reduce((s,p) => s+p.qty, 0);
+  const totalAmount = products.reduce((s,p) => s+p.amount, 0);
+
+  document.getElementById('productKpi').innerHTML = products.slice(0, 5).map((p, i) => {
+    const colors = ['cyan','green','orange','purple','red'];
+    return `
+      <div class="kpi-card ${colors[i]}">
+        <div class="kpi-label">${p.name}</div>
+        <div class="kpi-value">${fmtMoney(p.qty)}</div>
+        <div class="kpi-sub">${p.orders} 单 | ¥${fmtMoney(p.amount)} | 占比 ${(p.qty/totalQty*100).toFixed(1)}%</div>
+      </div>
+    `;
+  }).join('');
+
+  // Product bar
+  const el1 = document.getElementById('chartProductBar');
+  if (charts.productBar) charts.productBar.dispose();
+  charts.productBar = echarts.init(el1);
+  charts.productBar.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'value', axisLabel: { color: '#8899aa' }, splitLine: { lineStyle: { color: '#2a3a4a' } } },
+    yAxis: { type: 'category', data: products.map(p=>p.name), axisLabel: { color: '#8899aa' }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    series: [
+      { name: '销量(包)', type: 'bar', data: products.map(p=>p.qty), itemStyle: { color: '#00d4ff', borderRadius: [0,4,4,0] }, barWidth: '30%' },
+      { name: '订单数', type: 'bar', data: products.map(p=>p.orders), itemStyle: { color: '#00e676', borderRadius: [0,4,4,0] }, barWidth: '30%' }
+    ],
+    legend: { textStyle: { color: '#8899aa' }, top: 0 }
+  });
+
+  // Product amount pie
+  const el2 = document.getElementById('chartProductAmount');
+  if (charts.productAmount) charts.productAmount.dispose();
+  charts.productAmount = echarts.init(el2);
+  charts.productAmount.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
+    legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { color: '#8899aa' } },
+    color: ['#00d4ff', '#00e676', '#ff9800', '#ab47bc', '#ff5252'],
+    series: [{
+      type: 'pie',
+      radius: ['35%', '65%'],
+      center: ['40%', '50%'],
+      data: products.map(p => ({ name: p.name, value: p.amount })),
+      label: { color: '#e0e6ed', formatter: '{b}\n{d}%' },
+      itemStyle: { borderColor: '#0f1923', borderWidth: 2 }
+    }]
+  });
+
+  // Stacked product by chain
+  const el3 = document.getElementById('chartStackProduct');
+  if (charts.stackProduct) charts.stackProduct.dispose();
+  charts.stackProduct = echarts.init(el3);
+  const chains = getChainStats(records);
+  const chainNames = Object.keys(chains);
+  const productNames = products.map(p => p.name);
+
+  const series = productNames.map((pn, pi) => {
+    const colors = ['#00d4ff', '#00e676', '#ff9800', '#ab47bc', '#ff5252'];
+    return {
+      name: pn,
+      type: 'bar',
+      stack: 'total',
+      data: chainNames.map(cn => {
+        return chains[cn].records.filter(r => r.product === pn).reduce((s, r) => s + fmtNum(r.qtyBags), 0);
+      }),
+      itemStyle: { color: colors[pi % colors.length] }
+    };
+  });
+
+  charts.stackProduct.setOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { textStyle: { color: '#8899aa' }, top: 0 },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: chainNames, axisLabel: { color: '#8899aa', rotate: 15 }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    yAxis: { type: 'value', axisLabel: { color: '#8899aa' }, splitLine: { lineStyle: { color: '#2a3a4a' } } },
+    series: series
+  });
+}
+
+// ==================== FINANCE ====================
+function renderFinance() {
+  const chains = getChainStats(allData);
+  const chainList = Object.values(chains);
+  const totalReceivable = chainList.reduce((s,c) => s+c.receivable, 0);
+  const totalPaid = chainList.reduce((s,c) => s+c.paid, 0);
+  const totalUnpaid = totalReceivable - totalPaid;
+  const overallRate = totalReceivable > 0 ? (totalPaid / totalReceivable * 100).toFixed(1) : 0;
+
+  document.getElementById('financeKpi').innerHTML = `
+    <div class="kpi-card green">
+      <div class="kpi-label">应收货款总额</div>
+      <div class="kpi-value">¥${fmtMoney(totalReceivable)}</div>
+      <div class="kpi-sub">${allData.length} 条记录</div>
+    </div>
+    <div class="kpi-card cyan">
+      <div class="kpi-label">已收货款</div>
+      <div class="kpi-value">¥${fmtMoney(totalPaid)}</div>
+      <div class="kpi-sub">回款率 ${overallRate}%</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">未收货款</div>
+      <div class="kpi-value">¥${fmtMoney(totalUnpaid)}</div>
+      <div class="kpi-sub">待回收</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">回款率</div>
+      <div class="kpi-value">${overallRate}%</div>
+      <div class="kpi-sub">${overallRate >= 80 ? '回款良好' : overallRate >= 50 ? '回款一般' : '回款不足'}</div>
+    </div>
+  `;
+
+  // Finance bar
+  const el1 = document.getElementById('chartFinanceBar');
+  if (charts.financeBar) charts.financeBar.dispose();
+  charts.financeBar = echarts.init(el1);
+  charts.financeBar.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { textStyle: { color: '#8899aa' }, top: 0 },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: chainList.map(c=>c.name), axisLabel: { color: '#8899aa', rotate: 15 }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    yAxis: { type: 'value', axisLabel: { color: '#8899aa' }, splitLine: { lineStyle: { color: '#2a3a4a' } } },
+    series: [
+      { name: '应收货款', type: 'bar', data: chainList.map(c=>c.receivable), itemStyle: { color: '#00d4ff', borderRadius: [4,4,0,0] } },
+      { name: '已收货款', type: 'bar', data: chainList.map(c=>c.paid), itemStyle: { color: '#00e676', borderRadius: [4,4,0,0] } },
+      { name: '未收货款', type: 'bar', data: chainList.map(c=>c.receivable-c.paid), itemStyle: { color: '#ff5252', borderRadius: [4,4,0,0] } }
+    ]
+  });
+
+  // Finance rate
+  const el2 = document.getElementById('chartFinanceRate');
+  if (charts.financeRate) charts.financeRate.dispose();
+  charts.financeRate = echarts.init(el2);
+  charts.financeRate.setOption({
+    tooltip: { trigger: 'axis', formatter: p => `${p[0].name}<br/>回款率: ${p[0].value}%` },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: chainList.map(c=>c.name), axisLabel: { color: '#8899aa', rotate: 15 }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    yAxis: { type: 'value', max: 100, axisLabel: { color: '#8899aa', formatter: '{value}%' }, splitLine: { lineStyle: { color: '#2a3a4a' } } },
+    series: [{
+      type: 'bar',
+      data: chainList.map(c => c.receivable > 0 ? Number((c.paid / c.receivable * 100).toFixed(1)) : 0),
+      itemStyle: {
+        color: function(params) {
+          const v = params.value;
+          if (v >= 80) return '#00e676';
+          if (v >= 50) return '#ff9800';
+          return '#ff5252';
+        },
+        borderRadius: [4,4,0,0]
+      },
+      label: { show: true, position: 'top', color: '#e0e6ed', fontSize: 11, formatter: '{c}%' }
+    }]
+  });
+
+  // Finance trend
+  const el3 = document.getElementById('chartFinanceTrend');
+  if (charts.financeTrend) charts.financeTrend.dispose();
+  charts.financeTrend = echarts.init(el3);
+
+  const monthData = {};
+  allData.forEach(r => {
+    if (r.payDate) {
+      const m = r.payDate.slice(0, 7);
+      if (!monthData[m]) monthData[m] = { paid: 0, count: 0 };
+      monthData[m].paid += fmtNum(r.paidAmount);
+      monthData[m].count++;
+    }
+  });
+  const sortedMonths = Object.keys(monthData).sort();
+  charts.financeTrend.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { textStyle: { color: '#8899aa' }, top: 0 },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: sortedMonths, axisLabel: { color: '#8899aa', rotate: 30 }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
+    yAxis: [
+      { type: 'value', name: '回款金额', axisLabel: { color: '#8899aa' }, splitLine: { lineStyle: { color: '#2a3a4a' } } },
+      { type: 'value', name: '回款笔数', axisLabel: { color: '#8899aa' }, splitLine: { show: false } }
+    ],
+    series: [
+      { name: '回款金额', type: 'bar', data: sortedMonths.map(m => monthData[m].paid), itemStyle: { color: '#00e676', borderRadius: [4,4,0,0] } },
+      { name: '回款笔数', type: 'line', yAxisIndex: 1, data: sortedMonths.map(m => monthData[m].count), smooth: true, lineStyle: { color: '#ff9800', width: 2 }, itemStyle: { color: '#ff9800' } }
+    ]
+  });
+}
+
+// ==================== DATA TABLE ====================
+function initFilters() {
+  const chains = unique(allData.map(r => r.chain));
+  const regions = unique(allData.map(r => r.region));
+  const products = unique(allData.map(r => r.product));
+
+  const chainSelect = document.getElementById('filterChain');
+  chains.forEach(c => { chainSelect.innerHTML += `<option value="${c}">${c}</option>`; });
+
+  const regionSelect = document.getElementById('filterRegion');
+  regions.forEach(r => { regionSelect.innerHTML += `<option value="${r}">${r}</option>`; });
+
+  const productSelect = document.getElementById('filterProduct');
+  products.forEach(p => { productSelect.innerHTML += `<option value="${p}">${p}</option>`; });
+
+  // Datalists for modal
+  document.getElementById('chainList').innerHTML = chains.map(c => `<option value="${c}">`).join('');
+  document.getElementById('regionList').innerHTML = regions.map(r => `<option value="${r}">`).join('');
+  document.getElementById('productList').innerHTML = products.map(p => `<option value="${p}">`).join('');
+}
+
+function getFilteredData() {
+  const search = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+  const chainFilter = document.getElementById('filterChain')?.value || '';
+  const regionFilter = document.getElementById('filterRegion')?.value || '';
+  const productFilter = document.getElementById('filterProduct')?.value || '';
+
+  return allData.filter(r => {
+    if (chainFilter && r.chain !== chainFilter) return false;
+    if (regionFilter && r.region !== regionFilter) return false;
+    if (productFilter && r.product !== productFilter) return false;
+    if (search) {
+      const text = `${r.chain} ${r.region} ${r.product} ${r.invoice} ${r.remark}`.toLowerCase();
+      if (!text.includes(search)) return false;
+    }
+    return true;
+  });
+}
+
+function renderTable() {
+  const filtered = getFilteredData();
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * pageSize;
+  const pageData = filtered.slice(start, start + pageSize);
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = pageData.map(r => {
+    const paidStatus = r.paidAmount > 0 ? (r.paidAmount >= r.receivable ? 'badge-green' : 'badge-orange') : 'badge-red';
+    const paidText = r.paidAmount > 0 ? (r.paidAmount >= r.receivable ? '已结清' : '部分回款') : '未回款';
+    return `
+      <tr>
+        <td><input type="checkbox" class="row-check" value="${r.id}"></td>
+        <td>${r.id}</td>
+        <td><span class="editable" onclick="editCell(${r.id}, 'chain')">${r.chain}</span></td>
+        <td><span class="editable" onclick="editCell(${r.id}, 'region')">${r.region || '-'}</span></td>
+        <td><span class="editable" onclick="editCell(${r.id}, 'signDate')">${r.signDate || '-'}</span></td>
+        <td><span class="editable" onclick="editCell(${r.id}, 'product')">${r.product || '-'}</span></td>
+        <td><span class="editable" onclick="editCell(${r.id}, 'qtyBags')">${r.qtyBags || 0}</span></td>
+        <td><span class="editable" onclick="editCell(${r.id}, 'qtyCases')">${r.qtyCases || 0}</span></td>
+        <td><span class="editable" onclick="editCell(${r.id}, 'unitPrice')">${r.unitPrice || 0}</span></td>
+        <td><span class="editable" onclick="editCell(${r.id}, 'receivable')">${fmtMoney(r.receivable)}</span></td>
+        <td><span class="editable" onclick="editCell(${r.id}, 'payDate')">${r.payDate || '-'}</span></td>
+        <td><span class="editable" onclick="editCell(${r.id}, 'paidAmount')">${fmtMoney(r.paidAmount)}</span></td>
+        <td><span class="badge ${paidStatus}">${paidText}</span></td>
+        <td><span class="editable" onclick="editCell(${r.id}, 'remark')">${r.remark || '-'}</span></td>
+        <td>
+          <button class="btn btn-secondary" style="padding:2px 8px; font-size:11px;" onclick="openEditModal(${r.id})">编辑</button>
+          <button class="btn btn-danger" style="padding:2px 8px; font-size:11px;" onclick="deleteRecord(${r.id})">删除</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  document.getElementById('tableInfo').textContent = `共 ${filtered.length} 条记录，第 ${currentPage}/${totalPages} 页`;
+
+  // Pagination
+  let pagHtml = '';
+  pagHtml += `<button class="page-btn" ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">上一页</button>`;
+  for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+    pagHtml += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  if (totalPages > 10) pagHtml += `<span style="color:var(--text-secondary)">... ${totalPages}</span>`;
+  pagHtml += `<button class="page-btn" ${currentPage===totalPages?'disabled':''} onclick="goPage(${currentPage+1})">下一页</button>`;
+  document.getElementById('pagination').innerHTML = pagHtml;
+}
+
+function goPage(p) { currentPage = p; renderTable(); }
+
+function editCell(id, field) {
+  const row = allData.find(r => r.id === id);
+  if (!row) return;
+  openEditModal(id, field);
+}
+
+function toggleAll(cb) {
+  document.querySelectorAll('.row-check').forEach(c => c.checked = cb.checked);
+}
+
+function deleteSelected() {
+  const checked = [...document.querySelectorAll('.row-check:checked')].map(c => Number(c.value));
+  if (checked.length === 0) { showToast('请先选择要删除的记录', 'warning'); return; }
+  if (!confirm(`确定删除选中的 ${checked.length} 条记录吗？`)) return;
+  allData = allData.filter(r => !checked.includes(r.id));
+  saveData();
+  renderTable();
+  showToast(`已删除 ${checked.length} 条记录`, 'success');
+}
+
+function deleteRecord(id) {
+  if (!confirm('确定删除这条记录吗？')) return;
+  allData = allData.filter(r => r.id !== id);
+  saveData();
+  renderTable();
+  showToast('记录已删除', 'success');
+}
+
+// ==================== MODAL ====================
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = '新增记录';
+  ['fChain','fRegion','fSignDate','fProduct','fQtyBags','fQtyCases','fUnitPrice','fReceivable','fPayDate','fPaidAmount','fInvoice','fRemark'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('editModal').classList.add('show');
+}
+
+function openEditModal(id, focusField) {
+  const r = allData.find(r => r.id === id);
+  if (!r) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = '编辑记录 #' + id;
+  document.getElementById('fChain').value = r.chain || '';
+  document.getElementById('fRegion').value = r.region || '';
+  document.getElementById('fSignDate').value = r.signDate || '';
+  document.getElementById('fProduct').value = r.product || '';
+  document.getElementById('fQtyBags').value = r.qtyBags || '';
+  document.getElementById('fQtyCases').value = r.qtyCases || '';
+  document.getElementById('fUnitPrice').value = r.unitPrice || '';
+  document.getElementById('fReceivable').value = r.receivable || '';
+  document.getElementById('fPayDate').value = r.payDate || '';
+  document.getElementById('fPaidAmount').value = r.paidAmount || '';
+  document.getElementById('fInvoice').value = r.invoice || '';
+  document.getElementById('fRemark').value = r.remark || '';
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('show');
+}
+
+function saveRecord() {
+  const record = {
+    chain: document.getElementById('fChain').value.trim(),
+    region: document.getElementById('fRegion').value.trim(),
+    signDate: document.getElementById('fSignDate').value,
+    product: document.getElementById('fProduct').value.trim(),
+    qtyBags: fmtNum(document.getElementById('fQtyBags').value),
+    qtyCases: fmtNum(document.getElementById('fQtyCases').value),
+    unitPrice: fmtNum(document.getElementById('fUnitPrice').value),
+    receivable: fmtNum(document.getElementById('fReceivable').value),
+    payDate: document.getElementById('fPayDate').value,
+    paidAmount: fmtNum(document.getElementById('fPaidAmount').value),
+    invoice: document.getElementById('fInvoice').value.trim(),
+    remark: document.getElementById('fRemark').value.trim()
+  };
+
+  if (!record.chain) { showToast('请填写供应链名称', 'error'); return; }
+
+  if (editingId) {
+    const idx = allData.findIndex(r => r.id === editingId);
+    if (idx >= 0) { allData[idx] = { ...allData[idx], ...record }; showToast('记录已更新', 'success'); }
+  } else {
+    const maxId = allData.reduce((m, r) => Math.max(m, r.id), 0);
+    allData.push({ id: maxId + 1, ...record });
+    showToast('新记录已添加', 'success');
+  }
+  saveData();
+  closeModal();
+  initFilters();
+  renderTable();
+  // Re-render current tab if charts
+  const activeTab = document.querySelector('.tab.active');
+  if (activeTab) activeTab.click();
+}
+
+// ==================== FILE UPLOAD ====================
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  processExcelFile(file);
+  event.target.value = '';
+}
+
+function processExcelFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array', cellDates: true });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+
+      const parsed = parseExcelData(json);
+      if (parsed.length === 0) { showToast('未解析到有效数据', 'error'); return; }
+
+      // Show preview
+      const previewHtml = `
+        <div style="margin-bottom:12px; color:var(--text-secondary);">
+          已解析 <strong style="color:var(--accent-cyan)">${parsed.length}</strong> 条记录，
+          涉及 <strong style="color:var(--accent-cyan)">${unique(parsed.map(r=>r.chain)).length}</strong> 个供应链
+        </div>
+        <div class="scrollable-table" style="max-height:300px;">
+          <table class="data-table">
+            <thead><tr><th>供应链</th><th>辖区</th><th>签收日期</th><th>品种</th><th>数量(包)</th><th>应收货款</th></tr></thead>
+            <tbody>
+              ${parsed.slice(0, 20).map(r => `<tr><td>${r.chain}</td><td>${r.region||'-'}</td><td>${r.signDate||'-'}</td><td>${r.product||'-'}</td><td>${r.qtyBags||0}</td><td>¥${fmtMoney(r.receivable)}</td></tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        ${parsed.length > 20 ? '<div style="margin-top:8px;color:var(--text-secondary);font-size:12px;">仅显示前20条预览...</div>' : ''}
+        <div style="margin-top:16px; display:flex; gap:8px;">
+          <button class="btn btn-success" onclick="confirmUpload()">确认导入</button>
+          <button class="btn btn-secondary" onclick="cancelUpload()">取消</button>
+        </div>
+      `;
+      document.getElementById('uploadPreviewContent').innerHTML = previewHtml;
+      document.getElementById('uploadPreview').classList.remove('hidden');
+
+      // Store parsed data temporarily
+      window._pendingUpload = parsed;
+      showToast(`成功解析 ${parsed.length} 条记录，请确认导入`, 'success');
+    } catch(err) {
+      console.error(err);
+      showToast('文件解析失败: ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseExcelData(json) {
+  const records = [];
+  let currentChain = '';
+  let currentRegion = '';
+
+  // Find header row (contains "供应链名称")
+  let headerRow = -1;
+  for (let i = 0; i < Math.min(10, json.length); i++) {
+    if (json[i] && json[i].some(c => String(c).includes('供应链名称'))) {
+      headerRow = i;
+      break;
+    }
+  }
+  if (headerRow === -1) headerRow = 3; // Default
+
+  for (let i = headerRow + 1; i < json.length; i++) {
+    const row = json[i];
+    if (!row) continue;
+
+    const chainName = String(row[0] || '').trim();
+    const region = String(row[2] || '').trim();
+
+    if (chainName === '汇总' || region === '汇总') continue;
+    if (chainName && chainName !== '') currentChain = chainName;
+    if (region && region !== '') currentRegion = region;
+
+    const product = String(row[4] || '').trim();
+    const qtyBags = fmtNum(row[5]);
+    const qtyCases = fmtNum(row[6]);
+    const unitPrice = fmtNum(row[7]);
+    const receivable = fmtNum(row[8]);
+    const paidAmount = fmtNum(row[10]);
+    const invoice = String(row[11] || '').trim();
+    const remark = String(row[12] || '').trim();
+
+    // Parse dates
+    let signDate = '';
+    if (row[3]) {
+      if (row[3] instanceof Date) {
+        signDate = row[3].toISOString().slice(0, 10);
+      } else if (typeof row[3] === 'number') {
+        const d = new Date((row[3] - 25569) * 86400 * 1000);
+        signDate = d.toISOString().slice(0, 10);
+      } else {
+        signDate = String(row[3]);
+      }
+    }
+
+    let payDate = '';
+    if (row[9]) {
+      if (row[9] instanceof Date) {
+        payDate = row[9].toISOString().slice(0, 10);
+      } else if (typeof row[9] === 'number') {
+        const d = new Date((row[9] - 25569) * 86400 * 1000);
+        payDate = d.toISOString().slice(0, 10);
+      } else {
+        payDate = String(row[9]);
+      }
+    }
+
+    if (!product && !qtyBags && !receivable) continue;
+
+    records.push({
+      chain: currentChain,
+      region: currentRegion,
+      signDate,
+      product,
+      qtyBags,
+      qtyCases,
+      unitPrice,
+      receivable,
+      payDate,
+      paidAmount,
+      invoice,
+      remark
+    });
+  }
+  return records;
+}
+
+function confirmUpload() {
+  if (!window._pendingUpload || window._pendingUpload.length === 0) return;
+  const mode = document.querySelector('input[name="uploadMode"]:checked').value;
+
+  if (mode === 'replace') {
+    if (!confirm('覆盖模式将清空所有现有数据，确定继续吗？')) return;
+    allData = window._pendingUpload.map((r, i) => ({ id: i + 1, ...r }));
+  } else {
+    const maxId = allData.reduce((m, r) => Math.max(m, r.id), 0);
+    window._pendingUpload.forEach((r, i) => {
+      allData.push({ id: maxId + i + 1, ...r });
+    });
+  }
+
+  saveData();
+  initFilters();
+  renderAll();
+  document.getElementById('uploadPreview').classList.add('hidden');
+  window._pendingUpload = null;
+  showToast(`成功导入 ${window._pendingUpload?.length || ''} 条记录`, 'success');
+  switchTab('overview');
+}
+
+function cancelUpload() {
+  document.getElementById('uploadPreview').classList.add('hidden');
+  window._pendingUpload = null;
+}
+
+// ==================== EXPORT ====================
+function exportData() {
+  const headers = ['ID','供应链名称','所属辖区','签收日期','品种','数量（包）','数量（件）','单价（包）','应收货款','打款日期','已收金额','发票号','备注'];
+  const rows = allData.map(r => [r.id, r.chain, r.region, r.signDate, r.product, r.qtyBags, r.qtyCases, r.unitPrice, r.receivable, r.payDate, r.paidAmount, r.invoice, r.remark]);
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '供应链数据');
+  XLSX.writeFile(wb, `供应链食盐数据_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast('数据已导出', 'success');
+}
+
+// ==================== ANALYSIS ====================
+function renderAnalysis() {
+  const chains = getChainStats(allData);
+  const chainList = Object.values(chains);
+  const totalQty = allData.reduce((s,r) => s + fmtNum(r.qtyBags), 0);
+  const totalReceivable = chainList.reduce((s,c) => s+c.receivable, 0);
+  const totalPaid = chainList.reduce((s,c) => s+c.paid, 0);
+  const collectionRate = totalReceivable > 0 ? (totalPaid / totalReceivable * 100).toFixed(1) : 0;
+  const products = unique(allData.map(r => r.product));
+  const allDates = allData.map(r => r.signDate).filter(d => d).sort();
+  const dateRange = allDates.length > 0 ? `${allDates[0]} 至 ${allDates[allDates.length-1]}` : '-';
+
+  // Sort chains by qty
+  const sortedChains = [...chainList].sort((a,b) => b.qtyBags - a.qtyBags);
+  const topChain = sortedChains[0];
+  const lowChain = sortedChains[sortedChains.length - 1];
+
+  // Product analysis
+  const productMap = {};
+  allData.forEach(r => {
+    const p = r.product || '未分类';
+    if (!productMap[p]) productMap[p] = { qty: 0, amount: 0, orders: 0 };
+    productMap[p].qty += fmtNum(r.qtyBags);
+    productMap[p].amount += fmtNum(r.receivable);
+    productMap[p].orders++;
+  });
+  const sortedProducts = Object.entries(productMap).sort((a,b) => b[1].qty - a[1].qty);
+  const topProduct = sortedProducts[0];
+
+  // Overview
+  document.getElementById('analysisOverview').innerHTML = `
+    <div class="analysis-section">
+      <div class="analysis-section-title">📊 数据总览</div>
+      <div class="analysis-text">
+        系统当前共管理 <span class="analysis-highlight">${allData.length}</span> 条供应链食盐配送记录，
+        涉及 <span class="analysis-highlight">${chainList.length}</span> 家供应链企业，
+        覆盖 <span class="analysis-highlight">${unique(allData.map(r=>r.region)).length}</span> 个辖区，
+        数据时间跨度为 <span class="analysis-highlight">${dateRange}</span>。
+        <br><br>
+        总配送量达 <span class="analysis-highlight">${fmtMoney(totalQty)}</span> 包（${fmtMoney(allData.reduce((s,r)=>s+fmtNum(r.qtyCases),0))} 件），
+        应收货款总额 <span class="analysis-highlight">¥${fmtMoney(totalReceivable)}</span>，
+        已收回款 <span class="analysis-good">¥${fmtMoney(totalPaid)}</span>，
+        整体回款率为 <span class="${collectionRate>=80?'analysis-good':collectionRate>=50?'analysis-warn':'analysis-danger'}">${collectionRate}%</span>。
+        <br><br>
+        在所有供应链中，<span class="analysis-highlight">${topChain.name}</span> 以 ${fmtMoney(topChain.qtyBags)} 包的配送量位居首位，
+        占总配送量的 ${(topChain.qtyBags/totalQty*100).toFixed(1)}%；
+        而 <span class="analysis-warn">${lowChain.name}</span> 配送量最低，仅 ${fmtMoney(lowChain.qtyBags)} 包。
+      </div>
+    </div>
+  `;
+
+  // Chain analysis
+  let chainAnalysisHtml = '<div class="analysis-section"><div class="analysis-section-title">🏭 供应链销量分析</div><div class="analysis-text">';
+  sortedChains.forEach((c, i) => {
+    const rate = c.receivable > 0 ? (c.paid / c.receivable * 100).toFixed(1) : 0;
+    const avgCycle = getAvgCycleDays(c.dates);
+    const pct = (c.qtyBags / totalQty * 100).toFixed(1);
+    const status = rate >= 80 ? 'analysis-good' : rate >= 50 ? 'analysis-warn' : 'analysis-danger';
+    chainAnalysisHtml += `
+      <div style="margin-bottom:12px; padding:12px; background:var(--bg-secondary); border-radius:8px;">
+        <strong>${i+1}. ${c.name}</strong>（辖区: ${c.region}）<br>
+        配送量: <span class="analysis-highlight">${fmtMoney(c.qtyBags)} 包</span>（占比 ${pct}%）|
+        订单数: ${c.records.length} 单 |
+        平均配送周期: ${avgCycle} 天<br>
+        货款: 应收 ¥${fmtMoney(c.receivable)}，已收 ¥${fmtMoney(c.paid)}，回款率 <span class="${status}">${rate}%</span>
+      </div>
+    `;
+  });
+  chainAnalysisHtml += '</div></div>';
+  document.getElementById('analysisChains').innerHTML = chainAnalysisHtml;
+
+  // Product analysis
+  let productHtml = '<div class="analysis-section"><div class="analysis-section-title">📦 品种销量分析</div><div class="analysis-text">';
+  sortedProducts.forEach(([name, data], i) => {
+    const qtyPct = (data.qty / totalQty * 100).toFixed(1);
+    productHtml += `${i+1}. <span class="analysis-highlight">${name}</span>：配送 ${fmtMoney(data.qty)} 包（占比 ${qtyPct}%），${data.orders} 单，销售额 ¥${fmtMoney(data.amount)}<br>`;
+  });
+  productHtml += `<br><span class="analysis-good">${topProduct[0]}</span> 是销量最大的品种，占总配送量的 ${(topProduct[1].qty/totalQty*100).toFixed(1)}%。`;
+  productHtml += '</div></div>';
+  document.getElementById('analysisProducts').innerHTML = productHtml;
+
+  // Finance analysis
+  const unpaidChains = chainList.filter(c => c.receivable - c.paid > 0).sort((a,b) => (b.receivable-b.paid) - (a.receivable-a.paid));
+  let financeHtml = '<div class="analysis-section"><div class="analysis-section-title">💰 货款回收分析</div><div class="analysis-text">';
+  financeHtml += `整体回款率 <span class="${collectionRate>=80?'analysis-good':collectionRate>=50?'analysis-warn':'analysis-danger'}">${collectionRate}%</span>，`;
+  financeHtml += `已收货款 ¥${fmtMoney(totalPaid)}，仍有 <span class="analysis-warn">¥${fmtMoney(totalReceivable - totalPaid)}</span> 待回收。<br><br>`;
+  financeHtml += '<strong>未收货款排名:</strong><br>';
+  if (unpaidChains.length > 0) {
+    unpaidChains.forEach((c, i) => {
+      const unpaid = c.receivable - c.paid;
+      const rate = c.receivable > 0 ? (c.paid / c.receivable * 100).toFixed(1) : 0;
+      financeHtml += `${i+1}. ${c.name}：未收 <span class="analysis-danger">¥${fmtMoney(unpaid)}</span>（回款率 ${rate}%）<br>`;
+    });
+  } else {
+    financeHtml += '<span class="analysis-good">所有货款已全部收回</span>';
+  }
+  financeHtml += '</div></div>';
+  document.getElementById('analysisFinance').innerHTML = financeHtml;
+
+  // Risk analysis
+  let riskHtml = '<div class="analysis-section"><div class="analysis-section-title">⚠️ 风险预警</div><ul class="risk-list">';
+  const risks = [];
+
+  // Check low collection rate
+  chainList.forEach(c => {
+    const rate = c.receivable > 0 ? (c.paid / c.receivable * 100) : 0;
+    if (rate < 50 && c.receivable > 0) {
+      risks.push({
+        level: 'high',
+        text: `<strong>${c.name}</strong> 回款率仅 ${rate.toFixed(1)}%，未收货款 ¥${fmtMoney(c.receivable - c.paid)}，建议优先催收。`
+      });
+    }
+  });
+
+  // Check long delivery cycle
+  chainList.forEach(c => {
+    const cycle = getAvgCycleDays(c.dates);
+    if (cycle > 21 && c.dates.length > 1) {
+      risks.push({
+        level: 'medium',
+        text: `<strong>${c.name}</strong> 平均配送周期较长（${cycle} 天），配送频率偏低，建议关注客户需求变化。`
+      });
+    }
+  });
+
+  // Check no payment records
+  const noPayment = chainList.filter(c => c.paid === 0 && c.receivable > 0);
+  noPayment.forEach(c => {
+    risks.push({
+      level: 'high',
+      text: `<strong>${c.name}</strong> 应收货款 ¥${fmtMoney(c.receivable)} 但暂无任何回款记录，存在较高坏账风险。`
+    });
+  });
+
+  // Check overdue (sign date more than 90 days ago, no payment)
+  const now = new Date();
+  allData.forEach(r => {
+    if (r.signDate && r.receivable > 0 && r.paidAmount === 0) {
+      const days = (now - new Date(r.signDate)) / (1000*60*60*24);
+      if (days > 90) {
+        risks.push({
+          level: 'high',
+          text: `<strong>${r.chain}</strong> 于 ${r.signDate} 签收的货物（应收 ¥${fmtMoney(r.receivable)}）已超过90天未回款，存在逾期风险。`
+        });
+      }
+    }
+  });
+
+  // Check delivery trend decline
+  chainList.forEach(c => {
+    const sortedDates = c.dates.filter(d=>d).sort();
+    if (sortedDates.length >= 4) {
+      const recent = sortedDates.slice(-2);
+      const previous = sortedDates.slice(-4, -2);
+      const recentAvg = recent.length > 0 ? new Date(recent[1]) - new Date(recent[0]) : 0;
+      // Simple check: if last delivery was more than 30 days ago
+      const lastDate = new Date(sortedDates[sortedDates.length - 1]);
+      const daysSinceLast = (now - lastDate) / (1000*60*60*24);
+      if (daysSinceLast > 45) {
+        risks.push({
+          level: 'medium',
+          text: `<strong>${c.name}</strong> 最近一次配送距今已 ${Math.round(daysSinceLast)} 天，配送可能中断。`
+        });
+      }
+    }
+  });
+
+  if (risks.length === 0) {
+    riskHtml += '<li class="risk-item low">暂无重大风险，各供应链运行状况良好。</li>';
+  } else {
+    risks.forEach(risk => {
+      riskHtml += `<li class="risk-item ${risk.level}">${risk.text}</li>`;
+    });
+  }
+  riskHtml += '</ul></div>';
+  document.getElementById('analysisRisks').innerHTML = riskHtml;
+}
+
+// ==================== TOAST ====================
+function showToast(msg, type) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + (type || '');
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(400px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// ==================== RESIZE ====================
+window.addEventListener('resize', () => {
+  Object.values(charts).forEach(c => c && c.resize());
+});
+
+// ==================== START ====================
+init();
+</script>
 </body>
 </html>

@@ -1,0 +1,24 @@
+{
+  "name": "供应链食盐智能看板系统",
+  "short_name": "盐业看板",
+  "description": "供应链食盐智能管理看板系统 - 库存进销存、客户台账、配送线路、销售考核一体化",
+  "icons": [
+    {
+      "src": "app-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f1923",
+  "theme_color": "#00d4ff",
+  "orientation": "landscape-primary"
+}
