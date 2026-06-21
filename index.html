@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>供应链智能看板系统</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>供应链智能看板系统</h1>
+      <div class="header-actions">
+        <label class="upload-btn">
+          <input type="file" id="fileInput" accept=".xls,.xlsx" hidden>
+          上传Excel数据
+        </label>
+        <button class="btn" id="exportBtn">导出数据</button>
+        <button class="btn btn-primary" id="saveBtn">保存修改</button>
+      </div>
+    </header>
+
+    <div class="stats-bar">
+      <div class="stat-card healthy">
+        <div class="stat-value" id="healthyCount">0</div>
+        <div class="stat-label">健康状态</div>
+      </div>
+      <div class="stat-card normal">
+        <div class="stat-value" id="normalCount">0</div>
+        <div class="stat-label">正常状态</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-value" id="warningCount">0</div>
+        <div class="stat-label">预警状态</div>
+      </div>
+      <div class="stat-card critical">
+        <div class="stat-value" id="criticalCount">0</div>
+        <div class="stat-label">紧急状态</div>
+      </div>
+      <div class="stat-card total">
+        <div class="stat-value" id="totalCount">0</div>
+        <div class="stat-label">总记录数</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-box">
+        <h3>供应链销量分布</h3>
+        <div id="salesChart" style="width:100%;height:300px;"></div>
+      </div>
+      <div class="chart-box">
+        <h3>需求与销量对比</h3>
+        <div id="demandChart" style="width:100%;height:300px;"></div>
+      </div>
+      <div class="chart-box">
+        <h3>状态占比分析</h3>
+        <div id="statusChart" style="width:100%;height:300px;"></div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-box wide">
+        <h3>配送周期趋势</h3>
+        <div id="cycleChart" style="width:100%;height:300px;"></div>
+      </div>
+    </div>
+
+    <div class="table-section">
+      <h3>供应链明细数据 <span class="tip">（点击蓝色单元格可直接编辑，编辑后自动重新分析）</span></h3>
+      <div class="table-wrap">
+        <table id="dataTable">
+          <thead>
+            <tr>
+              <th>供应链</th>
+              <th>产品</th>
+              <th>区域</th>
+              <th>需求量</th>
+              <th>销量</th>
+              <th>库存</th>
+              <th>配送周期(天)</th>
+              <th>满足率</th>
+              <th>库存天数</th>
+              <th>状态</th>
+              <th>智能分析</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
